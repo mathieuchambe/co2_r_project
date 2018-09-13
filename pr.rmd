@@ -14,6 +14,7 @@ First we import the data into R. We make sure that the types are right.
 ```{r concentration}
 table = read.csv("weekly_in_situ_co2_mlo.csv", sep=",", header=FALSE, col.names=c('Date', 'CO2 Concentration'), colClasses=c('Date', 'numeric'))
 dates = table[1:3082, 1]
+values= table[1:3082, 2]
 ```
 
 ## Including Plots
@@ -21,13 +22,33 @@ dates = table[1:3082, 1]
 We can take a first look at the data points.
 
 ```{r plot, echo=FALSE}
-plot(table, type='l')
+plot(dates, log(values), type='l')
 ```
 We now take care of the missing values of the dataset. We look for dates which are not separated by 7 days from the previous one.
 
 ```{r}
-missing_data = table[1:3082, 1] + 7 == c(table[2:3082, 1], as.Date('1-1-1'))
-missing_dates = which(!missing_data)
+allD = seq(dates[1], dates[3082], by=7)
+missing_data = as.Date(setdiff(allD, dates), origin="1970-01-01")
+dates = c(dates, missing_data)
+v = vector(length = length(missing_data))
+v[] = NaN
+values = c(values, v)
+```
+
+Linear model of the data
+```{r lm}
+reg = lm(values ~ dates)
+line = reg$coefficients[1] +  reg$coefficients[2]*(1:3082)
+new_val = log(values) - line
+plot(dates, log(values), type='l')
+abline(reg$coefficients[1], reg$coefficients[2])
+t = decompose(new_val)
+```
+
+```{r lm2}
+new_val2 = smth(values)
+plot(dates,new_val2, type='l') + plot(dates, values, type='l')
+
 ```
 
 Fourier transform to get the frequency of the oscillatory behaviour. 
