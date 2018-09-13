@@ -9,20 +9,31 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## R Markdown
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+First we import the data into R. We make sure that the types are right.
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
+```{r concentration}
+table = read.csv("weekly_in_situ_co2_mlo.csv", sep=",", header=FALSE, col.names=c('Date', 'CO2 Concentration'), colClasses=c('Date', 'numeric'))
+dates = table[1:3082, 1]
 ```
 
 ## Including Plots
 
-You can also embed plots, for example:
+We can take a first look at the data points.
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r plot, echo=FALSE}
+plot(table, type='l')
+```
+We now take care of the missing values of the dataset. We look for dates which are not separated by 7 days from the previous one.
+
+```{r}
+missing_data = table[1:3082, 1] + 7 == c(table[2:3082, 1], as.Date('1-1-1'))
+missing_dates = which(!missing_data)
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+Fourier transform to get the frequency of the oscillatory behaviour. 
+```{r}
+fourier = fft(table[1:3082, 2])
+fourier[5:3082] = 0
+inv_fourier = fft(fourier, inverse = TRUE)
+plot(dates, Re(inv_fourier), type = 'l')
+```
